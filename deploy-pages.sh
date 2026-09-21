@@ -9,7 +9,8 @@ git diff --quiet || { echo "工作区有未提交改动，先 commit 再发布�
 
 BLOB=$(git hash-object -w utopia-engine.html)
 EMPTY=$(git hash-object -w /dev/null)
-TREE=$(printf '100644 blob %s\tindex.html\n100644 blob %s\t.nojekyll\n' "$BLOB" "$EMPTY" | git mktree)
+# 同一份文件放两个名字：/ 和 /utopia-engine.html 都能打开
+TREE=$(printf '100644 blob %s\tindex.html\n100644 blob %s\tutopia-engine.html\n100644 blob %s\t.nojekyll\n' "$BLOB" "$BLOB" "$EMPTY" | git mktree)
 if git rev-parse --verify -q origin/gh-pages >/dev/null; then
   COMMIT=$(git commit-tree "$TREE" -p origin/gh-pages -m "Pages: 发布 main@$(git rev-parse --short main)")
 else
