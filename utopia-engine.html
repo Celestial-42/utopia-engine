@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Utopia Engine · 本地版</title>
+<style>
+:root{
+  --bg:#0e1116; --bg2:#161b22; --bg3:#1d2430; --line:#2c3542;
+  --fg:#dfe6ee; --dim:#8b98a9; --acc:#e8b04b; --good:#5ec97f; --bad:#e5646c; --mp:#59a6d8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.55 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+h1{font-size:16px;margin:0;letter-spacing:.5px}
+h2{font-size:12px;margin:0 0 8px;color:var(--acc);letter-spacing:1.5px;text-transform:uppercase}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header .sub{color:var(--dim);font-size:12px}
+main{display:grid;grid-template-columns:290px minmax(420px,1fr) 330px;gap:12px;padding:12px;align-items:start}
+section.card{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:12px}
+aside{display:flex;flex-direction:column}
+button{font:inherit;background:var(--bg3);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+button:disabled{opacity:.35;cursor:default}
+button.pri{border-color:var(--acc);color:var(--acc)}
+button.on{background:var(--acc);color:#14181f;border-color:var(--acc)}
+button.mini{padding:2px 6px;font-size:12px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.dim{color:var(--dim)} .good{color:var(--good)} .bad{color:var(--bad)} .acc{color:var(--acc)} .mp{color:var(--mp)}
+.dice{display:flex;gap:8px}
+.die{width:44px;height:44px;border:2px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--bg3);cursor:pointer}
+.die.sel{border-color:var(--acc);color:var(--acc);background:#242c3a}
+.die.used{opacity:.25;cursor:default}
+.cells{display:grid;gap:4px}
+.cell{width:38px;height:32px;border:1px solid var(--line);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:17px;background:#111620}
+.cell.hint{border-color:var(--mp);cursor:pointer}
+.cell .tip{color:var(--acc);font-size:15px;font-weight:bold}
+.cell.lbl{border:none;background:none;color:var(--dim);font-size:11px;width:auto}
+.grid2{display:grid;grid-template-columns:repeat(3,38px);gap:5px}
+.box{border:1px solid var(--line);border-radius:7px;padding:7px;background:#121722}
+.vial{display:flex;gap:4px;align-items:center}
+.pip{width:16px;height:22px;border:1px solid var(--line);border-radius:3px 3px 6px 6px;background:#121722}
+.pip.full{background:var(--bad);border-color:var(--bad)}
+.track{display:flex;flex-wrap:wrap;gap:3px}
+.tk{width:22px;height:22px;border:1px solid var(--line);border-radius:4px;font-size:10px;display:flex;align-items:center;justify-content:center;color:var(--dim)}
+.tk.x{background:#3a1b1f;border-color:var(--bad);color:var(--bad);text-decoration:line-through}
+.tk.e{border-color:var(--mp);color:var(--mp)}
+.tk.doom{border-color:var(--acc);color:var(--acc);font-weight:bold}
+.tk.skull{opacity:.55}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border-bottom:1px solid var(--line);padding:3px 5px;text-align:left;vertical-align:top}
+th{color:var(--dim);font-weight:normal}
+#logbox{height:calc(100vh - 120px);overflow:auto;font-size:12px;line-height:1.5}
+#logbox p{margin:0 0 5px;padding-left:8px;border-left:2px solid var(--line)}
+#logbox p.hit{border-color:var(--bad)} #logbox p.win{border-color:var(--good)} #logbox p.time{border-color:var(--mp)}
+.regions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.region{border:1px solid var(--line);border-radius:7px;padding:8px;background:#121722;cursor:pointer}
+.region:hover{border-color:var(--acc)}
+.region.here{border-color:var(--acc);background:#18202e}
+.region .nm{font-size:13px;color:var(--acc)}
+.tr{display:flex;gap:3px;margin-top:4px}
+.tc{width:15px;height:15px;border:1px solid var(--line);border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--dim)}
+.tc.mk{background:var(--acc);border-color:var(--acc);color:#14181f}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.art{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.artcard{border:1px solid var(--line);border-radius:7px;padding:7px;font-size:11px;background:#121722;min-height:96px}
+.artcard.f{border-color:var(--mp)} .artcard.a{border-color:var(--good)}
+.bar{display:flex;gap:2px;margin-top:4px}
+.seg{height:7px;flex:1;background:#1b2230;border-radius:2px}
+.seg.f{background:var(--good)}
+.linkrow{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.help{font-size:12px;color:var(--dim)} .help b{color:var(--fg)}
+kbd{background:var(--bg3);border:1px solid var(--line);border-radius:3px;padding:0 4px;font-size:11px}
+.score{font-size:26px;color:var(--acc)}
+@media(max-width:1100px){main{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <h1>UTMPIA&nbsp;ENGINE <span class="dim">本地版 · solitaire dice game of reconstructing the end of time</span></h1>
+  <div class="row" id="topbtns"></div>
+</header>
+<main>
+  <aside id="left"></aside>
+  <section id="center"></section>
+  <aside class="card" style="padding:0 10px"><h2 style="padding:10px 2px 0">纪事 / Log</h2><div id="logbox"></div></aside>
+</main>
+<script>
+//<UE-GAME>
+"use strict";
+/* ============ 数据（取自官方规则 3e + introscopia.github.io 网页版源码） ============ */
+const COMP_NAMES = ["Silver","Quartz","Gum","Silica","Wax","Lead"];
+const COMP_ZH    = ["银","石英","树胶","硅石","蜡","铅"];
+const ART_NAMES  = ["Seal of Balance","Hermetic Mirror","Void Gate","Golden Chassis","Scrying Lens","Crystal Battery"];
+const ART_ZH     = ["均衡之印","秘仪之镜","虚空之门","黄金骨架","窥见透镜","水晶电池"];
+const ART_TXT    = [
+ "一局一次：进入某区时忽略该区全部事件（离开失效）",
+ "被动：在 Halebeard Peak / The Fiery Maw 搜索结果可 −10",
+ "被动：昏迷后只需 4 天恢复（原本 6 天）",
+ "被动：对战灵体 (S) 时每颗骰子 +1（不超过 6）",
+ "被动：在 Marshes / Glassrock Canyon 搜索结果可 −10",
+ "主动：花 3 个材料给一件已用掉的工具充能"];
+const TR_NAMES   = ["Ice Plate","Bracelet of Ios","Shimmering Moonlace","Scale of the Infinity Wurm","The Ancient Record","The Molten Shard"];
+const TR_ZH      = ["冰甲盘","约斯手镯","月光织锦","无限蠕虫之鳞","先民记录","熔岩碎片"];
+const TR_TXT     = [
+ "被动：所有怪物攻击射程 −1（最低 1）",
+ "被动：激活神器时先白送 1 点能量",
+ "主动：可无视一次遭遇",
+ "被动：每个事件日回 1 点血",
+ "主动：把任意一条 link value 改成 0（一局一次）",
+ "被动：你对怪物的攻击射程 +1"];
+const TOOL_NAMES = ["Paralysis Wand","Dowsing Rod","Focus Charm"];
+const TOOL_ZH    = ["麻痹法杖","探矿杖","聚焦符"];
+const TOOL_TXT   = [
+ "战斗中每颗骰子 +2（不超过 6），本场战斗持续",
+ "把 11~99 的搜索结果改成恰好 1",
+ "激活时立刻 +2 点能量"];
+const REGIONS = [
+ {nm:"Halebeard Peak",zh:"黑须峰",comp:0,trk:[-1,-1,0,-1,0,0],
+  mon:["Ice Bear","Roving Bandits","Blood Wolves","Horse Eater Hawk","The Hollow Giant"],sp:[0,0,0,0,1]},
+ {nm:"The Great Wilds",zh:"无尽荒野",comp:1,trk:[-1,0,0,-1,0,0],
+  mon:["Rogue Thief","Blanket of Crows","Hornback Bison","Grassyback Troll","Thunder King"],sp:[0,0,0,0,0]},
+ {nm:"Root-Strangled Marshes",zh:"缠根沼泽",comp:3,trk:[-1,0,-1,0,-1,0],
+  mon:["Gemscale Boa","Ancient Alligator","Land Shark","Abyssal Leech","Dweller in the Tides"],sp:[0,0,0,1,0]},
+ {nm:"Glassrock Canyon",zh:"玻璃岩峡谷",comp:2,trk:[-1,-1,0,-1,0,0],
+  mon:["Feisty Gremlin","Glasswing Drake","Reaching Claws","Terrible Wurm","Infinity Wurm"],sp:[0,0,1,0,1]},
+ {nm:"Ruined City of the Ancients",zh:"先民废都",comp:4,trk:[-1,0,-1,0,-1,0],
+  mon:["Grave Robbers","Ghost Lights","Vengeful Shade","Nightmare Crab","The Unnamed"],sp:[0,1,1,0,0]},
+ {nm:"The Fiery Maw",zh:"烈焰之口",comp:5,trk:[-1,-1,-1,0,-1,0],
+  mon:["Minor Imp","Renegade Warlock","Giant Flame Lizard","Spark Elemental","Volcano Spirit"],sp:[0,0,0,1,1]}];
+const LINKS = [{a:1,b:3,c:0},{a:5,b:0,c:1},{a:4,b:3,c:2},{a:0,b:1,c:3},{a:3,b:2,c:4},{a:3,b:5,c:5}];
+const EV_NAMES = ["Active Monsters 怪物活跃","Fleeting Vision 幻影一瞥","Good Fortune 好运","Foul Weather 坏天气"];
+const MON_RNG = [[1,1],[1,1],[1,2],[1,3],[1,4]];
+const PLR_RNG = [[5,6],[6,6],[6,6],[6,6],[6,6]];
+const DOOM = 15;                       // 末日格
+const isEventDay = d => d % 3 === 2;   // 官方：第 2,5,8,11,14,17,20 格为事件日
+const MAX_HP = 6, MAX_DELAY = 7;
+
+/* ============ 状态 & 工具 ============ */
+let S = null, UNDO = [], RNG = Math.random;
+function seedRng(n){ let a = (n>>>0) || 1; RNG = function(){ a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function d6(){ return 1 + Math.floor(RNG() * 6); }
+const clone = o => JSON.parse(JSON.stringify(o));
+const HAS_DOM = typeof document !== 'undefined' && !!document.getElementById('left');
+function limit(){ return DOOM + S.delay; }
+function daysLeft(){ return limit() - S.day; }
+function regName(i){ return REGIONS[i].zh + ' · ' + REGIONS[i].nm; }
+function log(m, c){ S.log.push({ m: m, c: c || '' }); if (S.log.length > 500) S.log.shift(); }
+function snapshot(){ UNDO.push(clone(S)); if (UNDO.length > 40) UNDO.shift(); }
+function undo(){ if (!UNDO.length) return; S = UNDO.pop(); log('（撤销一步）'); render(); }
+function trHas(i){ return !!S.tr[i]; }
+function artActive(i){ return !!S.act[i]; }
+function toolReady(i){ return S.tools[i] > 0; }
+function isFoul(i){ return S.ev[3] === i && S.sealOff !== i; }
+function isMonsters(i){ return S.ev[0] === i && S.sealOff !== i; }
+function isVision(i){ return S.ev[1] === i && S.sealOff !== i; }
+function isFortune(i){ return S.ev[2] === i && S.sealOff !== i; }
+function subSources(rg, raw){ if (raw != null && raw <= 0) return []; const out = []; if (artActive(1) && (rg === 0 || rg === 5)) out.push('mirror'); if (artActive(4) && (rg === 2 || rg === 3)) out.push('lens'); if (isFortune(rg) && S.sealOff !== rg) out.push('fortune'); return out; }
+function monRange(lvl){ let hi = MON_RNG[lvl - 1][1]; if (trHas(0)) hi = Math.max(1, hi - 1); return [1, hi]; }
+function plrRange(lvl){ let lo = PLR_RNG[lvl - 1][0]; if (trHas(5)) lo = Math.max(1, lo - 1); return [lo, 6]; }
+function encLevel(r){ if (r > 0) return Math.max(1, Math.min(5, Math.floor(r / 100))); if (r >= -100) return 1; if (r >= -200) return 2; if (r >= -300) return 3; if (r >= -400) return 4; return 5; }
+function compAdd(rg){ const c = REGIONS[rg].comp; if (S.comps[c] >= 4){ log('材料罐（' + COMP_ZH[c] + '）已满，这块材料白费了。', 'hit'); return; } S.comps[c]++; log('获得材料 ' + COMP_NAMES[c] + '（' + COMP_ZH[c] + '），现有 ' + S.comps[c] + ' 个。', 'win'); }
+
+/* ============ 时间 ============ */
+function rollEvents(){
+  S.ev = [d6() - 1, d6() - 1, d6() - 1, d6() - 1];
+  log('事件降临：' + S.ev.map((r, i) => EV_NAMES[i].split(' ')[0] + '→' + (r >= 0 ? REGIONS[r].zh : '?')).join('，'), 'time');
+  if (trHas(3)){ S.hp = Math.min(MAX_HP, S.hp + 1); log('无限蠕虫之鳞让你恢复 1 点血。', 'win'); }
+}
+function advanceDay(n, why){
+  for (let k = 0; k < n; k++){
+    S.day++;
+    log('⏳ 第 ' + S.day + ' 天 · ' + why + '（距末日 ' + (limit() - S.day) + ' 天）', 'time');
+    if (isEventDay(S.day)) rollEvents();
+    if (S.day >= limit()){ endGame(false, '末日在第 ' + S.day + ' 天降临，Utopia Engine 只差一步。世界归于寂静。'); return false; }
+  }
+  return true;
+}
+function takeHits(n, src){
+  S.hp -= n;
+  log('💥 ' + (src || '') + ' 造成 ' + n + ' 点伤害（剩余体力 ' + Math.max(0, S.hp) + '/' + MAX_HP + '）', 'hit');
+  if (S.hp < 0){ endGame(false, '你在 ' + (src || '伤重') + '中倒下，Isodoros 死在了荒野里。'); return false; }
+  if (S.hp === 0 && !S.finalRun){
+    const days = artActive(2) ? 4 : 6;
+    log('护身符把你传送回工坊 —— 你昏迷了。', 'hit');
+    S.mode = 'idle'; S.dice = []; S.box = null; S.loc = -1; S.trk = [0, 0, 0, 0, 0, 0];
+    log('所有地区的搜索进度全部丢失。', 'hit');
+    if (!advanceDay(days, artActive(2) ? '虚空之门让你只躺了 4 天' : '你在床上躺了 6 天')) return false;
+    S.hp = MAX_HP;
+  }
+  return true;
+}
+function rest(n){
+  if (S.mode === 'combat' || S.mode === 'final') return;
+  if (S.hp >= MAX_HP){ log('你已经满血了。'); return; }
+  snapshot();
+  const home = S.loc < 0;
+  const gain = n + (home && n >= 3 ? 1 : 0);
+  if (advanceDay(n, '扎营休养')) { S.hp = Math.min(MAX_HP, S.hp + gain); log('恢复了 ' + gain + ' 点体力' + (home && n >= 3 ? '（文明的舒适额外 +1）' : '') + '。', 'win'); }
+  if (S.mode !== 'over') S.mode = 'idle';
+  render();
+}
+
+/* ============ 移动 ============ */
+function travelTo(i){
+  if (S.mode === 'combat' || S.mode === 'final' || S.mode === 'activate' || S.mode === 'link' || S.mode === 'resolve') return;
+  if (S.loc === i) return;
+  snapshot();
+  if (S.loc >= 0){ S.trk[S.loc] = 0; log('离开 ' + regName(S.loc) + '，该区搜索追踪器清空。'); if (S.sealOff === S.loc) S.sealOff = -1; }
+  S.loc = i; S.mode = 'idle'; S.dice = []; S.box = null;
+  log(i < 0 ? '回到工坊。这里有灯、有工具、有短暂的安宁。' : '进入 ' + regName(i) + '。');
+  render();
+}
+
+/* ============ 搜索 ============ */
+function beginSearch(){
+  if (S.loc < 0 || (S.mode !== 'idle')) return;
+  snapshot();
+  S.box = { cells: Array(6).fill(null), rolls: 0, mods: { mirror: false, lens: false, fortune: false }, rod: false, raw: null, adj: null };
+  S.mode = 'search';
+  rollPair('开始搜索 ' + REGIONS[S.loc].zh);
+  render();
+}
+function rollPair(why){
+  S.dice = [{ v: d6(), used: false }, { v: d6(), used: false }];
+  S.sel = null;
+  log((why ? why + '：' : '') + '掷出 ' + S.dice[0].v + ' 和 ' + S.dice[1].v);
+}
+function pickDie(i){ if (!S.dice[i] || S.dice[i].used) return; S.sel = (S.sel === i ? null : i); render(); }
+function placeSearch(k){
+  if (S.mode !== 'search') return;
+  let i = S.sel;
+  if (i == null) i = S.dice.findIndex(d => !d.used);
+  if (i < 0 || S.box.cells[k] != null) return;
+  S.box.cells[k] = S.dice[i].v; S.dice[i].used = true; S.sel = null;
+  const left = S.dice.filter(d => !d.used);
+  if (left.length){ render(); return; }
+  S.box.rolls++;
+  if (S.box.rolls < 3){ rollPair(); render(); return; }
+  computeSearch();
+}
+function topBottom(cells){
+  const t = cells[0] * 100 + cells[1] * 10 + cells[2];
+  const b = cells[3] * 100 + cells[4] * 10 + cells[5];
+  return [t, b, t - b];
+}
+function computeSearch(){
+  const [t, b, raw] = topBottom(S.box.cells);
+  S.box.raw = raw;
+  S.mode = 'resolve';
+  const av = subSources(S.loc, S.box.raw);
+  if (!av.includes('mirror')) S.box.mods.mirror = false;
+  if (!av.includes('lens')) S.box.mods.lens = false;
+  if (!av.includes('fortune')) S.box.mods.fortune = false;
+  applyMods();
+  log('三位数 ' + t + ' − ' + b + ' = ' + raw + '，看看能否修正…', 'time');
+  render();
+}
+function applyMods(){
+  let v = S.box.raw;
+  const sub10 = x => { if (x > 0){ x -= 10; if (x < 0) x = 0; } return x; };
+  if (S.box.mods.fortune) v = sub10(v);
+  if (S.box.mods.mirror) v = sub10(v);
+  if (S.box.mods.lens) v = sub10(v);
+  if (S.box.rod && v >= 11 && v <= 99) v = 1;
+  S.box.adj = v;
+}
+function toggleMod(k){ if (!subSources(S.loc, S.box.raw).includes(k)) return; S.box.mods[k] = !S.box.mods[k]; applyMods(); log('修正后搜索结果 = ' + S.box.adj); render(); }
+function useRod(){ if (!toolReady(1) || S.box.raw == null) return; const v = S.box.adj; if (v < 11 || v > 99) return; S.box.rod = true; S.tools[1] = 0; applyMods(); log('🪄 探矿杖：把 ' + v + ' 变成 1 —— 手里躺着一件沉睡的神器。', 'win'); render(); }
+function autoSearch(){
+  let g = 0;
+  while (S.mode === 'search' && g++ < 8){ const h = hintCells(); if (!h.length) break; placeSearch(h[0].cell); }
+  if (S.mode === 'search') render();
+}
+function toggleSeal(){ if (!artActive(0) || S.sealUsed || S.loc < 0) return; S.sealUsed = true; S.sealOff = S.loc; log('⚖️ 均衡之印平息了 ' + REGIONS[S.loc].zh + ' 的事件，直到你离开。', 'win'); render(); }
+function markTracker(){
+  if (S.loc < 0) return;
+  const rg = S.loc, i = S.trk[rg];
+  if (i >= 6) return;
+  S.trk[rg] = i + 1;
+  if (REGIONS[rg].trk[i] < 0){
+    const cost = isFoul(rg) && S.sealOff !== rg ? 2 : 1;
+    advanceDay(cost, '搜索追踪器上有 -1（' + REGIONS[rg].zh + ' 第 ' + (i + 1) + ' 格）');
+  }
+  if (S.trk[rg] >= 6) log('本区已被彻底搜过一遍 —— 可以用「 exhaustive search」花 1 天直接取得神器。', 'win');
+}
+function extensiveSearch(){
+  if (S.loc < 0 || S.trk[S.loc] < 6) return;
+  const ai = S.loc;
+  if (S.found[ai]){ log('已经拿到该区神器了。'); return; }
+  snapshot();
+  if (!advanceDay(1, 'exhaustive search')){ render(); return; }
+  S.found[ai] = true;
+  log('🔧 你在 ' + REGIONS[ai].zh + ' 翻遍每一个角落，找到了 ' + ART_NAMES[ai] + '（' + ART_ZH[ai] + '）！', 'win');
+  S.mode = 'idle'; S.box = null; S.dice = []; render();
+}
+function resolveSearch(){
+  if (S.mode !== 'resolve') return;
+  snapshot();
+  const r = S.box.adj, ai = S.loc;
+  S.stats.searches++;
+  log('搜索结果 = ' + r + '：' + describeResult(r), 'win');
+  if (r === 0){
+    if (!S.found[ai]){ S.found[ai] = true; S.act[ai] = true; S.gh = Math.min(6, S.gh + 2); log('✨ ' + ART_NAMES[ai] + ' 仍在运转！直接激活，神之手 +2 能量。', 'win'); }
+    else { compAdd(ai); compAdd(ai); }
+  } else if (r >= 1 && r <= 10){
+    if (!S.found[ai]){ S.found[ai] = true; log('🔧 找到沉睡的 ' + ART_NAMES[ai] + '（' + ART_ZH[ai] + '）！带回工坊激活它。', 'win'); }
+    else compAdd(ai);
+  } else if (r >= 11 && r <= 99){
+    compAdd(ai);
+  } else {
+    const lvl = Math.min(5, encLevel(r) + (isMonsters(ai) && S.sealOff !== ai ? 2 : 0));
+    S.pendingMark = true;
+    startCombat(ai, lvl);
+    render(); return;
+  }
+  markTracker(); if (S.mode === 'over'){ render(); return; } S.mode = 'idle'; S.box = null; S.dice = []; render();
+}
+function describeResult(r){
+  if (r === 0) return '完美！已激活的神器';
+  if (r >= 1 && r <= 10) return '未激活的神器';
+  if (r >= 11 && r <= 99) return '一块材料';
+  return '惊动了 L' + encLevel(r) + ' 的敌人';
+}
+
+
+/* ============ 最优落子提示（期望搜索 + 记忆化） ============
+   注意收益是不对称的：0 = 已激活神器 > 1~10 = 神器 > 11~99 = 材料 > 其他（含一切负数）= 遭遇。
+   所以目标不是「让差值接近 0」，而是「尽量落在正的小区间」。 */
+const HM = new Map();
+function hExact(c){ return (c[0] * 100 + c[1] * 10 + c[2]) - (c[3] * 100 + c[4] * 10 + c[5]); }
+function hFree(c){ const o = []; c.forEach((v, i) => { if (v == null) o.push(i); }); return o; }
+function hCostRaw(r){
+  if (r === 0) return -4;
+  if (r >= 1 && r <= 10) return -3;
+  if (r >= 11 && r <= 99) return -2;
+  return 1 + Math.min(5, encLevel(r));
+}
+/* avail = 可用的 −10 修正数（镜子/透镜/好运），rod = 探矿杖是否还在 */
+function hStep(x){ return x > 0 ? Math.max(0, x - 10) : x; }
+function hCost(r, avail, rod){
+  let v = r, best = hCostRaw(v);
+  for (let k = 1; k <= avail; k++){ v = hStep(v); best = Math.min(best, hCostRaw(v)); }
+  if (rod){ let w = r, c = hCostRaw(w); for (let k = 1; k <= avail; k++){ w = hStep(w); c = Math.min(c, hCostRaw(w)); } if (w >= 11 && w <= 99) c = Math.min(c, -3); best = Math.min(best, c); }
+  return best;
+}
+function hEv(c, avail, rod){
+  const free = hFree(c);
+  if (!free.length) return hCost(hExact(c), avail, rod);
+  const k = c.map(v => v == null ? '-' : v).join('') + '|' + avail + '|' + rod;
+  const m = HM.get(k); if (m != null) return m;
+  let s = 0;
+  const step = (n, diceLeft) => hEv(n, diceLeft ? 0 : avail, rod);
+  if (free.length % 2 === 1){
+    for (let a = 1; a <= 6; a++){ let best = 1e9; for (const i of free){ const n = c.slice(); n[i] = a; const v = hEv(n, avail, rod); if (v < best) best = v; } s += best / 6; }
+  } else {
+    for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++){
+      let best = 1e9;
+      for (const i of free) for (const j of free) if (i !== j){ const n = c.slice(); n[i] = a; n[j] = b; const v = hEv(n, avail, rod); if (v < best) best = v; }
+      s += best / 36;
+    }
+  }
+  HM.set(k, s); return s;
+}
+function hintContext(){
+  let avail = 0;
+  const rg = S.loc;
+  if (artActive(1) && (rg === 0 || rg === 5)) avail++;
+  if (artActive(4) && (rg === 2 || rg === 3)) avail++;
+  if (isFortune(rg) && S.sealOff !== rg) avail++;
+  return { avail: avail, rod: toolReady(1) && !S.box.rod };
+}
+function hintCells(){
+  if (!S || !S.box || !S.box.cells || S.mode !== 'search' || S.dice.length !== 2) return [];
+  const ctx = hintContext();
+  const un = []; S.dice.forEach((d, i) => { if (!d.used) un.push(i); });
+  const free = hFree(S.box.cells);
+  if (!free.length || !un.length) return [];
+  const ev = n => hEv(n, ctx.avail, ctx.rod);
+  if (un.length === 2){
+    let bk = null, bs = 1e9;
+    for (const i of free) for (const j of free) if (i !== j){
+      const n = S.box.cells.slice(); n[i] = S.dice[un[0]].v; n[j] = S.dice[un[1]].v;
+      const v = ev(n); if (v < bs - 1e-9){ bs = v; bk = [{ d: un[0], cell: i }, { d: un[1], cell: j }]; }
+    }
+    return bk || [];
+  }
+  let bk = -1, bs = 1e9; const i0 = un[0];
+  for (const i of free){ const n = S.box.cells.slice(); n[i] = S.dice[i0].v; const v = ev(n); if (v < bs - 1e-9){ bs = v; bk = i; } }
+  return bk >= 0 ? [{ d: i0, cell: bk }] : [];
+}
+
+/* ============ 遭遇 & 战斗 ============ */
+function startCombat(rg, lvl){
+  const m = REGIONS[rg].mon[lvl - 1];
+  S.mode = 'combat';
+  S.combat = { rg: rg, lvl: lvl, name: m, spirit: !!REGIONS[rg].sp[lvl - 1], wand: false, round: 0, dice: [] };
+  S.stats.fights++;
+  log('⚔️ ' + m + (S.combat.spirit ? '（灵体）' : '') + ' 挡在前方。它命中 ' + monRange(lvl).join('、') + '；你命中 ' + plrRange(lvl).join('、') + '。', 'hit');
+}
+function useWand(){
+  if (S.mode !== 'combat' || !toolReady(0)) return;
+  snapshot(); S.tools[0] = 0; S.combat.wand = true;
+  log('🪄 麻痹法杖：本场战斗起，你每颗骰子 +2。', 'win'); render();
+}
+function ignoreEncounter(){
+  if (S.mode !== 'combat' || !trHas(2)) return;
+  snapshot(); log('🌫️ 月光织锦让你隐入无形 —— 遭遇就这么过去了。', 'win');
+  S.combat = null; S.dice = [];
+  if (S.pendingMark){ S.pendingMark = false; markTracker(); }
+  if (S.mode !== 'over') S.mode = 'idle';
+  render();
+}
+function combatRoll(){
+  const c = S.combat; if (!c || S.mode !== 'combat') return;
+  snapshot();
+  let a = d6(), b = d6(); const raw = a + ',' + b;
+  if (artActive(3) && c.spirit){ a = Math.min(6, a + 1); b = Math.min(6, b + 1); }
+  if (c.wand){ a = Math.min(6, a + 2); b = Math.min(6, b + 2); }
+  const mr = monRange(c.lvl), pr = plrRange(c.lvl);
+  const dmg = [a, b].filter(v => v >= mr[0] && v <= mr[1]).length;
+  const hit = [a, b].some(v => v >= pr[0] && v <= pr[1]);
+  c.round++; c.dice = [a, b]; c.raw = raw;
+  log('⚔️ 第 ' + c.round + ' 回合 [' + raw + '] → ' + a + '·' + b + '：' + (dmg ? '它抓伤你 ×' + dmg : '它落空') + '，' + (hit ? '弩箭贯穿，它倒了！' : '没能致命'), hit ? 'win' : 'hit');
+  if (dmg && !takeHits(dmg, c.name)){ S.combat = null; render(); return; }
+  if (S.mode !== 'combat'){ S.combat = null; render(); return; }
+  if (!hit){ render(); return; }
+  S.stats.kills++;
+  const drop = d6();
+  if (drop <= c.lvl){
+    if (c.lvl === 5){ if (!S.tr[c.rg]){ S.tr[c.rg] = true; log('👑 ' + c.name + ' 掉落传奇宝物 ' + TR_NAMES[c.rg] + '（' + TR_ZH[c.rg] + '）！', 'win'); } else log(c.name + ' 只有一份宝物，已经给过你了。'); }
+    else compAdd(c.rg);
+  } else log(c.name + ' 什么也没留下（掉落掷 ' + drop + ' > L' + c.lvl + '）。');
+  S.combat = null; S.dice = [];
+  if (S.pendingMark){ S.pendingMark = false; markTracker(); }
+  if (S.mode !== 'over') S.mode = 'idle';
+  render();
+}
+
+/* ============ 工坊：激活 ============ */
+function needEnergy(ai){ return isVision(ai) ? 3 : 4; }
+function beginActivate(ai){
+  if (S.loc >= 0 || !S.found[ai] || S.act[ai] || S.mode !== 'idle') return;
+  snapshot();
+  S.mode = 'activate';
+  const base = trHas(1) ? 1 : 0;
+  S.box = { ai: ai, attempt: 1, slots: Array(8).fill(null), circles: [null, null, null, null], energy: base };
+  S.stats.acts++;
+  log('🔧 开始激活 ' + ART_NAMES[ai] + '（' + ART_ZH[ai] + '），需要 ' + needEnergy(ai) + ' 点能量。' + (base ? '约斯手镯先注入 1 点。' : ''), 'time');
+  rollPair('激活');
+  render();
+}
+function activateDone(){ return S.box.circles.filter(v => v != null).length >= 4; }
+function placeActivate(k){
+  const b = S.box; if (!b || S.mode !== 'activate') return;
+  if (Math.floor(k / 2) >= 0 && b.circles[Math.floor(k / 2)] != null) return;
+  if (b.slots[k] != null) return;
+  let i = S.sel; if (i == null) i = S.dice.findIndex(d => !d.used);
+  if (i < 0) return;
+  b.slots[k] = S.dice[i].v; S.dice[i].used = true; S.sel = null;
+  const bi = Math.floor(k / 2), pair = b.circles;
+  if (b.slots[bi * 2] != null && b.slots[bi * 2 + 1] != null){
+    const diff = b.slots[bi * 2] - b.slots[bi * 2 + 1];
+    if (diff === 0){ b.slots[bi * 2] = null; b.slots[bi * 2 + 1] = null; log('  格 ' + (bi + 1) + '：差 0 → 清空重来'); }
+    else if (diff === 4){ pair[bi] = 1; log('  格 ' + (bi + 1) + '：差 4 → 1 点能量'); }
+    else if (diff === 5){ pair[bi] = 2; log('  格 ' + (bi + 1) + '：差 5 → 2 点能量'); }
+    else { pair[bi] = 0; log('  格 ' + (bi + 1) + '：差 ' + diff + ' → 锁死' + (diff < 0 ? '，能量反噬捅你一下' : ''), 'hit'); if (diff < 0 && !takeHits(1, ART_NAMES[b.ai] + ' 反噬')){ S.box = null; render(); return; } }
+  }
+  if (S.mode !== 'activate'){ S.box = null; render(); return; }
+  if (activateDone()){ finishActivate(); return; }
+  if (S.dice.every(d => d.used)) rollPair();
+  render();
+}
+function useCharm(){
+  const b = S.box; if (!b || S.mode !== 'activate' || !toolReady(2)) return;
+  snapshot(); S.tools[2] = 0; b.energy += 2;
+  log('🪄 聚焦符：' + ART_NAMES[b.ai] + ' 的能量条 +2。', 'win');
+  render();
+}
+function finishActivate(){
+  const b = S.box, ai = b.ai, need = needEnergy(ai);
+  const gained = b.circles.filter(v => v != null).reduce((s, v) => s + v, 0);
+  const total = b.energy + gained;
+  log('四个结果圈填满：本轮 ' + gained + ' 点，累计 ' + total + '/' + need + '。');
+  if (total >= need){
+    S.act[ai] = true; const surplus = total - need;
+    if (surplus > 0){ S.gh = Math.min(6, S.gh + surplus); log('✨ ' + ART_NAMES[ai] + ' 激活！溢出 ' + surplus + ' 点进神之手。', 'win'); }
+    else log('✨ ' + ART_NAMES[ai] + ' 激活！', 'win');
+    S.box = null; S.mode = 'idle'; S.dice = []; render(); return;
+  }
+  if (b.attempt === 1){
+    b.attempt = 2; b.energy = total; b.slots = Array(8).fill(null); b.circles = [null, null, null, null];
+    if (advanceDay(1, '激活失败，再花一天')){ log('第一次尝试只攒到 ' + total + ' 点，进入第二轮（能量保留）。'); rollPair('第二轮'); }
+    if (S.mode === 'over'){ S.box = null; S.dice = []; return; }
+    render(); return;
+  }
+  b.attempt = 3;
+  const alive = advanceDay(1, '强行完成激活');
+  if (alive){ S.act[ai] = true; log('⚙️ ' + ART_NAMES[ai] + ' 被你硬生生点亮了（花掉最后一天换确定性）。', 'win'); }
+  S.box = null; S.dice = []; if (S.mode !== 'over') S.mode = 'idle'; render();
+}
+function abandon(){ if (S.mode === 'activate' || S.mode === 'link'){ S.box = null; S.mode = 'idle'; S.dice = []; log('你推开手头的工作。'); render(); } }
+
+/* ============ 工坊：连线 ============ */
+function beginLink(li){
+  const L = LINKS[li];
+  if (S.loc >= 0 || S.links[li] != null || !S.found[L.a] || !S.found[L.b]) return;
+  if (S.comps[L.c] < 1){ log('连这条线需要 ' + COMP_NAMES[L.c] + '，罐子是空的。'); return; }
+  snapshot();
+  if (S.mode !== 'idle') return;
+  S.mode = 'link';
+  S.comps[L.c]--;
+  S.box = { li: li, cells: Array(6).fill(null), waste: [null, null], circles: [null, null, null], spent: 1 };
+  S.stats.links++;
+  log('🔗 消耗 1 份 ' + COMP_NAMES[L.c] + '，连接 ' + ART_NAMES[L.a] + ' ↔ ' + ART_NAMES[L.b] + '。目标：结果尽量小。', 'time');
+  rollPair('连线');
+  render();
+}
+function linkBoxFilled(li){ const b = S.box; return b.cells[li * 2] != null && b.cells[li * 2 + 1] != null; }
+function placeLink(k){
+  const b = S.box; if (!b || S.mode !== 'link') return;
+  let i = S.sel; if (i == null) i = S.dice.findIndex(d => !d.used);
+  if (i < 0) return;
+  const v = S.dice[i].v;
+  if (k >= 6){ if (b.waste[k - 6] != null) return; b.waste[k - 6] = v; S.dice[i].used = true; S.sel = null; log('  把 ' + v + ' 扔进垃圾槽'); }
+  else { const bx = Math.floor(k / 2); if (linkBoxFilled(bx) || b.cells[k] != null) return; b.cells[k] = v; S.dice[i].used = true; S.sel = null;
+    if (linkBoxFilled(bx)){ const diff = b.cells[bx * 2] - b.cells[bx * 2 + 1]; b.circles[bx] = diff; log('  第 ' + (bx + 1) + ' 格差值 = ' + diff + (diff < 0 ? '（负数！）' : '')); } }
+  const free = linkFree();
+  if (S.dice.every(d => d.used)){
+    if (b.circles.filter(x => x != null).length >= 3){ resolveLink(); return; }
+    if (!free.length){ takeHits(1, '无处下手的骰子'); log('格子全满，只能硬吃一下能量灼伤。', 'hit'); }
+    if (S.mode === 'link') rollPair();
+  }
+  render();
+}
+function linkFree(){
+  const b = S.box, out = [];
+  for (let i = 0; i < 6; i++){ const bx = Math.floor(i / 2); if (b.cells[i] == null && !linkBoxFilled(bx)) out.push({ k: i, label: '格' + (bx + 1) + (i % 2 ? '下' : '上') }); }
+  for (let i = 0; i < 2; i++) if (b.waste[i] == null) out.push({ k: 6 + i, label: '垃圾槽' });
+  return out;
+}
+function resolveLink(){
+  const b = S.box, li = b.li, c = LINKS[li].c, negs = b.circles.filter(v => v < 0).length;
+  let circles = b.circles.slice();
+  if (negs){
+    log('⚡ 电弧乱窜！' + negs + ' 个负数结果，材料被气化。', 'hit');
+    if (!takeHits(negs, '失败的能量弧')){ S.box = null; render(); return; }
+    if (S.mode !== 'link'){ S.box = null; render(); return; }
+    if (S.comps[c] >= 1){ S.comps[c]--; circles = circles.map(v => v < 0 ? 2 : v); log('再投入 1 份 ' + COMP_NAMES[c] + ' 稳住电弧（负数按 2 计）。'); }
+    else { log('没有多余的 ' + COMP_NAMES[c] + '，这条线推倒重来。', 'hit'); S.links[li] = null; S.box = null; S.mode = 'idle'; S.dice = []; render(); return; }
+  }
+  const val = circles.reduce((s, v) => s + v, 0);
+  S.links[li] = val;
+  log('🔗 连接完成，link value = ' + val + '（最终启动难度累计 ' + linkTotal() + '）。', 'win');
+  S.box = null; S.mode = 'idle'; S.dice = []; render();
+}
+function linkTotal(){ return S.links.reduce((s, v) => s + (v == null ? 0 : v), 0); }
+function useRecord(li){
+  if (!trHas(4) || S.recordUsed || S.links[li] == null) return;
+  snapshot(); S.recordUsed = true; S.links[li] = 0;
+  log('📜 《先民记录》改写第 ' + (li + 1) + ' 条连接：link value → 0。难度降到 ' + linkTotal() + '。', 'win'); render();
+}
+function godsHand(){
+  if (S.gh < 3 || S.delay >= MAX_DELAY) return;
+  snapshot(); S.gh -= 3; S.delay++;
+  log('🖐️ 神之手重启！划掉一个骷髅，末日推迟到第 ' + limit() + ' 天。', 'win'); render();
+}
+function recharge(ti){
+  if (!artActive(5) || toolReady(ti)) return;
+  const total = S.comps.reduce((s, v) => s + v, 0);
+  if (total < 3){ log('材料不足 3 个。'); return; }
+  snapshot();
+  const spent = [];
+  for (let k = 0; k < 3; k++){ let best = 0; for (let j = 1; j < 6; j++) if (S.comps[j] > S.comps[best]) best = j; S.comps[best]--; spent.push(COMP_NAMES[best]); }
+  S.tools[ti] = 1;
+  log('🔋 水晶电池烧掉 ' + spent.join('/') + '，' + TOOL_NAMES[ti] + ' 重新充能。', 'win'); render();
+}
+
+/* ============ 最终启动 ============ */
+function allFound(){ return S.found.every(Boolean); }
+function allActive(){ return S.act.every(Boolean); }
+function allLinked(){ return S.links.every(v => v != null); }
+function canFinal(){ return allActive() && allLinked(); }
+function beginFinal(){
+  if (!canFinal() || S.loc >= 0) return;
+  snapshot(); S.mode = 'final'; S.spend = 0; S.finalRun = false;
+  log('🌟 六件神器就位。最终启动难度 = ' + linkTotal() + '。你可以先烧体力换难度。', 'win'); render();
+}
+function spendHp(n){
+  if (S.mode !== 'final') return;
+  if (S.hp0 == null || S.hp0 < S.hp) S.hp0 = S.hp, S.spend = 0;
+  const t = Math.max(0, Math.min(S.hp0, (S.spend || 0) + n));
+  if (t === S.spend) return;
+  if (!S.finalRun){ S.hp0 = S.hp; S.finalRun = true; }
+  S.spend = t; S.hp = S.hp0 - t;
+  log('❤️ 注入 ' + t + ' 点体力，难度 ' + Math.max(1, linkTotal() - t) + '（剩余体力 ' + S.hp + '）');
+  render();
+}
+function finalRoll(){
+  if (S.mode !== 'final') return;
+  const diff = Math.max(1, linkTotal() - S.spend);
+  const a = d6(), b = d6(), t = a + b;
+  log('🎲 决定性一掷：' + a + ' + ' + b + ' = ' + t + ' vs 难度 ' + diff, 'time');
+  if (t >= diff){ endGame(true, 'Utopia Engine 在刺目的白光中醒来 —— 末日停下了。'); return; }
+  if (S.hp <= 0){ S.hp = -1; endGame(false, '你趴在沉默的机器上，再也没能站起来。'); return; }
+  S.hp -= 1;
+  S.spend = 0; S.hp0 = S.hp; S.finalRun = S.hp > 0;
+  log('  失败。机器痉挛着烧掉了你的一天和一口血。', 'hit');
+  if (!advanceDay(1, '启动失败')) return;
+  render();
+}
+
+/* ============ 结算 ============ */
+function tally(win){
+  const f = S.found.filter(Boolean).length, ac = S.act.filter(Boolean).length, lk = S.links.filter(v => v != null).length;
+  const ch = S.tools.filter(t => t > 0).length, tr = S.tr.filter(Boolean).length;
+  const parts = [['找到神器', f, 10], ['激活神器', ac, 5], ['完成连接', lk, 5], ['划掉骷髅', S.delay, 10], ['满充能工具', ch, 10], ['传奇宝物', tr, 20]];
+  let sc = 0;
+  parts.forEach(p => sc += p[1] * p[2]);
+  if (win){ parts.push(['启动成功', 1, 50]); parts.push(['剩余天数', Math.max(0, daysLeft()), 5]); parts.push(['剩余体力', Math.max(0, S.hp), 1]); parts.push(['专家模式少给的天数', S.sacrifice, 10]); sc += 50 + Math.max(0, daysLeft()) * 5 + Math.max(0, S.hp) + S.sacrifice * 10; }
+  return { parts: parts, total: sc };
+}
+function endGame(win, reason){
+  if (S.mode === 'over') return;
+  S.over = { win: win, reason: reason };
+  S.score = tally(win);
+  S.mode = 'over'; S.box = null; S.dice = []; S.combat = null;
+  log((win ? '🏆 ' : '☠️ ') + reason, win ? 'win' : 'hit');
+  log('最终得分 ' + S.score.total + '。', 'win');
+  render();
+}
+
+/* ============ 新游戏 ============ */
+function newGame(o){
+  o = o || {};
+  seedRng(o.seed == null ? (Date.now() & 0x7fffffff) : o.seed);
+  const sac = Math.max(0, Math.min(12, o.sacrifice | 0));
+  S = {
+    day: sac, delay: 0, sacrifice: sac, hp: MAX_HP, hp0: MAX_HP, loc: -1,
+    trk: [0, 0, 0, 0, 0, 0], found: Array(6).fill(false), act: Array(6).fill(false),
+    links: Array(6).fill(null), comps: [0, 0, 0, 0, 0, 0], tr: Array(6).fill(false),
+    tools: [1, 1, 1], gh: 0, ev: [-1, -1, -1, -1], sealUsed: false, sealOff: -1, recordUsed: false,
+    mode: 'idle', dice: [], sel: null, box: null, combat: null, pendingMark: false, hintMode: true,
+    spend: 0, finalRun: false, over: null, score: null, log: [],
+    stats: { searches: 0, fights: 0, kills: 0, acts: 0, links: 0 }
+  };
+  UNDO = [];
+  log('末日还有 ' + (limit() - S.day) + ' 天。公会给了你一支铅笔、两颗骰子、和十四天的命。', 'time');
+  log('提示：先在野外搜索（材料/神器），回工坊激活与连线，最后启动。时间是最贵的东西。', 'time');
+  render();
+}
+
+/* 供测试/脚本使用的接口 */
+const UE = {
+  S: () => S, newGame, travelTo, beginSearch, pickDie, placeSearch, toggleMod, useRod, resolveSearch,
+  extensiveSearch, toggleSeal, combatRoll, useWand, ignoreEncounter, rest,
+  beginActivate, placeActivate, useCharm, abandon, beginLink, placeLink, resolveLink, useRecord,
+  godsHand, recharge, beginFinal, spendHp, finalRoll, undo, linkTotal, canFinal, tally, freeSearch: () => (S.box ? S.box.cells.map((v, i) => v == null ? i : null).filter(v => v != null) : []),
+  freeAct: () => (S.box ? S.box.slots.map((v, i) => (v == null && S.box.circles[Math.floor(i / 2)] == null) ? i : null).filter(v => v != null) : []),
+  linkFree, legal: () => legalActions(), hint: hintCells, autoSearch, toggleHint: () => { S.hintMode = !S.hintMode; render(); }
+};
+function legalActions(){
+  const L = [];
+  if (!S || S.mode === 'over') return L;
+  const m = S.mode;
+  if (m === 'search') return UE.freeSearch().length ? ['place'] : [];
+  if (m === 'resolve'){ L.push('resolve'); if (toolReady(1) && S.box.adj >= 11 && S.box.adj <= 99 && !S.box.rod) L.push('rod'); subSources(S.loc, S.box.raw).forEach(k => L.push('mod:' + k)); return L; }
+  if (m === 'combat'){ L.push('roll'); if (toolReady(0) && !S.combat.wand) L.push('wand'); if (trHas(2)) L.push('moonlace'); return L; }
+  if (m === 'activate'){ if (toolReady(2)) L.push('charm'); return L.length ? L : ['place']; }
+  if (m === 'link') return ['place'];
+  if (m === 'final'){ L.push('finalRoll'); if (S.hp > 0) L.push('spend'); return L; }
+  if (S.loc >= 0){ L.push('search'); if (S.trk[S.loc] >= 6 && !S.found[S.loc]) L.push('extensive'); L.push('workshop'); if (S.hp < MAX_HP) L.push('rest'); if (artActive(0) && !S.sealUsed) L.push('seal'); }
+  else {
+    for (let i = 0; i < 6; i++) L.push('region:' + i);
+    for (let i = 0; i < 6; i++) if (S.found[i] && !S.act[i]) L.push('activate:' + i);
+    for (let i = 0; i < 6; i++) if (S.links[i] == null && S.found[LINKS[i].a] && S.found[LINKS[i].b] && S.comps[LINKS[i].c] > 0) L.push('link:' + i);
+    if (S.gh >= 3 && S.delay < MAX_DELAY) L.push('gh');
+    if (S.hp < MAX_HP) L.push('rest');
+    if (artActive(5)) for (let i = 0; i < 3; i++) if (!toolReady(i) && S.comps.reduce((a, b) => a + b, 0) >= 3) L.push('recharge:' + i);
+    if (trHas(4) && !S.recordUsed) for (let i = 0; i < 6; i++) if (S.links[i] > 0) L.push('record:' + i);
+    if (canFinal()) L.push('final');
+  }
+  if (m === 'idle' && !S.dice.length) {}
+  return L;
+}
+globalThis.UE = UE;
+
+//</UE-GAME>
+
+/* ============ 渲染 ============ */
+function B(a, label, opt){
+  opt = opt || {};
+  const cls = opt.cls || ''; const dis = opt.dis ? ' disabled' : '';
+  const v = opt.v != null ? ' data-v="' + opt.v + '"' : '';
+  const s = opt.s != null ? ' data-s="' + opt.s + '"' : '';
+  return '<button data-a="' + a + '"' + v + s + ' class="' + cls + '"' + dis + '>' + label + '</button>';
+}
+function diceHtml(){
+  if (!S.dice.length) return '';
+  return '<div class="row" style="margin:6px 0"><span class="dim">骰子（点一颗，再点格子）：</span><div class="dice">' +
+    S.dice.map((d, i) => '<div class="die ' + (d.used ? 'used' : '') + ' ' + (S.sel === i ? 'sel' : '') + '" data-a="die" data-v="' + i + '">' + (d.used ? '·' : d.v) + '</div>').join('') +
+    '</div></div>';
+}
+function cellHtml(k, v, act, cls, badge){
+  return '<div class="cell ' + (v == null ? 'hint ' : '') + (cls || '') + '" ' + (v == null ? 'data-a="' + act + '" data-v="' + k + '"' : '') + '>' + (v == null ? (badge != null ? '<span class="tip">' + badge + '</span>' : '') : v) + '</div>';
+}
+function vialHtml(){
+  let h = '<div class="vial">';
+  for (let i = 0; i < MAX_HP; i++) h += '<div class="pip ' + (i >= S.hp ? 'full' : '') + '"></div>';
+  return h + ' <span class="' + (S.hp <= 2 ? 'bad' : 'dim') + '">' + S.hp + '/' + MAX_HP + '</span></div>';
+}
+function trackHtml(){
+  let h = '<div class="track">';
+  for (let d = 1; d <= 23; d++){
+    const crossed = d <= S.day;
+    const skull = d >= DOOM;
+    const isDoom = d === limit();
+    let cls = 'tk' + (crossed ? ' x' : '') + (isEventDay(d) ? ' e' : '') + (isDoom ? ' doom' : '') + (skull && !isDoom ? ' skull' : '');
+    let mark = isDoom ? '☠' : (isEventDay(d) ? 'E' : '');
+    if (skull && !isDoom) mark = crossed && d < limit() && d >= DOOM ? '✔' : '☠';
+    if (crossed && mark === 'E') mark = 'E';
+    h += '<div class="' + cls + '" title="第 ' + d + ' 天">' + mark + '</div>';
+  }
+  return h + '</div>';
+}
+function compsHtml(){
+  return '<div class="row">' + COMP_NAMES.map((n, i) =>
+    '<span title="' + n + '" class="' + (S.comps[i] ? 'acc' : 'dim') + '">' + COMP_ZH[i] + ':' + '●'.repeat(S.comps[i]) + '○'.repeat(4 - S.comps[i]) + '</span>').join(' ') + '</div>';
+}
+function toolsHtml(){
+  return '<div class="row">' + TOOL_NAMES.map((n, i) =>
+    '<span class="' + (S.tools[i] ? 'good' : 'dim') + '" title="' + TOOL_TXT[i] + '">' + (S.tools[i] ? '●' : '○') + TOOL_ZH[i] + '</span>').join(' ') + '</div>';
+}
+function evHtml(){
+  if (!S.ev.some(v => v >= 0)) return '<div class="dim">尚无事件。</div>';
+  return '<table>' + S.ev.map((r, i) => '<tr><td>' + EV_NAMES[i] + '</td><td>' + (r >= 0 ? (S.sealOff === r ? '<span class="good">' + REGIONS[r].zh + '（已被均衡之印平息）</span>' : REGIONS[r].zh) : '—') + '</td></tr>').join('') + '</table>';
+}
+function artsHtml(){
+  return '<div class="art">' + ART_NAMES.map((n, i) => {
+    const need = needEnergy(i), cur = S.act[i] ? need : 0;
+    let seg = '';
+    for (let k = 0; k < 4; k++) seg += '<div class="seg ' + (k < (S.act[i] ? 4 : 0) ? 'f' : '') + '"></div>';
+    return '<div class="artcard ' + (S.act[i] ? 'a' : (S.found[i] ? 'f' : '')) + '"><b>' + ART_ZH[i] + '</b><br><span class="dim">' + n + '</span>' +
+      '<div class="bar">' + seg + '</div><div>' + (S.act[i] ? '<span class="good">已激活</span>' : (S.found[i] ? '<span class="mp">已获得</span>' : '未找到')) + '</div></div>';
+  }).join('') + '</div>';
+}
+function leftHtml(){
+  return '<section class="card"><h2>Isodoros · 老工匠</h2>' + vialHtml() +
+    '<div class="row" style="margin-top:8px"><span class="dim">位置：</span><b>' + (S.loc < 0 ? '工坊' : REGIONS[S.loc].zh) + '</b></div>' +
+    '<div class="row" style="margin-top:4px"><span class="dim">搜索进度：</span>' + (S.loc < 0 ? '—' : S.trk[S.loc] + '/6') + '</div>' +
+    '</section>' +
+    '<section class="card"><h2>时间轨 · 第 ' + S.day + '/' + limit() + ' 天</h2>' + trackHtml() +
+    '<div class="row" style="margin-top:6px"><span class="' + (daysLeft() <= 3 ? 'bad' : 'dim') + '">剩余 ' + daysLeft() + ' 天</span>' +
+    '<span class="dim">神之手能量 ' + S.gh + '/3 · 已延迟 ' + S.delay + '</span>' + B('gh', '延迟末日', { dis: S.gh < 3 || S.delay >= MAX_DELAY, cls: 'mini' }) + '</div>' +
+    (S.sacrifice ? '<div class="acc help">专家模式：开局少给 ' + S.sacrifice + ' 天</div>' : '') + '</section>' +
+    '<section class="card"><h2>材料罐</h2>' + compsHtml() +
+    (artActive(5) ? '<div class="row" style="margin-top:6px">' + TOOL_NAMES.map((n, i) => S.tools[i] ? '' : B('recharge', '充能' + TOOL_ZH[i], { v: i, cls: 'mini' })).join('') + '</div>' : '') + '</section>' +
+    '<section class="card"><h2>工具带</h2>' + toolsHtml() + '</section>' +
+    '<section class="card"><h2>传奇宝物</h2>' + (S.tr.some(Boolean) ? '<div>' + TR_NAMES.map((n, i) => S.tr[i] ? '<div class="good">● ' + TR_ZH[i] + ' <span class="dim">' + n + '</span></div>' : '').join('') + '</div>' : '<div class="dim">尚未得到。</div>') + '</section>' +
+    '<section class="card"><h2>当前事件</h2>' + evHtml() + '</section>';
+}
+function regionCards(){
+  return '<div class="regions">' + REGIONS.map((r, i) => {
+    let dots = '<div class="tr">' + r.trk.map((v, k) => '<div class="tc ' + (k < S.trk[i] ? 'mk' : '') + '">' + (v < 0 ? '−' : '') + '</div>').join('') + '</div>';
+    const evs = [S.ev[0] === i ? '怪+' : '', S.ev[1] === i ? '视' : '', S.ev[2] === i ? '运' : '', S.ev[3] === i ? '灾' : ''].filter(Boolean).join(' ');
+    return '<div class="region ' + (S.loc === i ? 'here' : '') + '" data-a="region" data-v="' + i + '">' +
+      '<div class="nm">' + (i + 1) + '. ' + r.zh + ' <span class="dim">' + r.nm + '</span></div>' +
+      '<div class="help">材料 ' + COMP_ZH[r.comp] + ' · 神器 ' + ART_ZH[i] + (S.found[i] ? (S.act[i] ? ' ✓已激活' : ' (已获得)') : '') + (S.tr[i] ? ' · 宝物✓' : '') + '</div>' +
+      '<div class="help">怪物：' + r.mon.join(' / ') + '</div>' + dots + (evs ? '<div class="bad help">事件：' + evs + '</div>' : '') + '</div>';
+  }).join('') + '</div>';
+}
+function searchHtml(){
+  const b = S.box, tb = b.cells.some(v => v == null) ? null : topBottom(b.cells);
+  const hn = {}; (S.hintMode ? hintCells() : []).forEach(x => { hn[x.cell] = S.dice[x.d].v; });
+  let h = '<section class="card"><h2>搜索 ' + REGIONS[S.loc].zh + ' ' + B('hint', S.hintMode ? '🤖 提示：开' : '🤖 提示：关', { cls: 'mini' }) + '</h2>' + diceHtml();
+  h += '<div class="row" style="align-items:center;gap:10px"><div><div class="dim">上排（百十个）</div><div class="grid2">' + [0, 1, 2].map(k => cellHtml(k, b.cells[k], 'ps')).join('') + '</div></div>' +
+    '<div class="acc" style="font-size:22px">−</div>' +
+    '<div><div class="dim">下排</div><div class="grid2">' + [3, 4, 5].map(k => cellHtml(k, b.cells[k], 'ps', '', hn[k])).join('') + '</div></div>' +
+    '<div class="dim">已掷 ' + b.rolls + '/3 次</div>' + B('auto', '🤖 按提示自动放完', { cls: 'mini' }) + '</div>' +
+    (Object.keys(hn).length ? '<div class="help dim" style="margin-top:8px">🤖 期望最优：把这些数字放进带 ◈ 的格子（目标是让两个三位数尽量接近）。</div>' : '') +
+    (tb ? '<div class="row" style="margin-top:8px"><span class="dim">' + tb[0] + ' − ' + tb[1] + ' =</span><b class="' + (Math.abs(tb[2]) <= 10 ? 'good' : (Math.abs(tb[2]) > 99 ? 'bad' : 'mp')) + '" style="font-size:20px">' + tb[2] + '</b></div>' : '') + '</section>';
+  return h;
+}
+function resolveHtml(){
+  const b = S.box, av = subSources(S.loc, b.raw);
+  let h = '<section class="card"><h2>搜索结果 · ' + REGIONS[S.loc].zh + '</h2>';
+  h += '<div class="row" style="font-size:20px;align-items:baseline"><span class="dim">原始</span><b>' + b.raw + '</b><span class="dim">→ 修正后</span><b class="' + (Math.abs(b.adj) <= 10 ? 'good' : (Math.abs(b.adj) > 99 ? 'bad' : 'mp')) + '">' + b.adj + '</b><span class="dim">（' + describeResult(b.adj) + '）</span></div>';
+  if (av.length) h += '<div class="row" style="margin-top:8px">' + av.map(k => B('mod', (k === 'mirror' ? '秘仪之镜 −10' : k === 'lens' ? '窥见透镜 −10' : '好运事件 −10'), { s: k, cls: b.mods[k] ? 'on' : '', v: '' })).join('') + '</div>';
+  if (b.raw >= 11 || (b.adj >= 11 && b.adj <= 99)) h += '<div class="row" style="margin-top:6px">' + B('rod', '🪄 探矿杖：把结果变成 1', { dis: !toolReady(1) || b.adj < 11 || b.adj > 99 || b.rod, cls: 'pri' }) + '</div>';
+  h += '<div class="row" style="margin-top:10px">' + B('resolve', '✔ 接受这个结果', { cls: 'pri' }) + '<span class="dim help">骰子已经落下，没有反悔这一说。</span></div></section>';
+  return h;
+}
+function combatHtml(){
+  const c = S.combat, mr = monRange(c.lvl), pr = plrRange(c.lvl);
+  return '<section class="card"><h2>⚔️ ' + c.name + ' · L' + c.lvl + '</h2>' +
+    '<div class="help">它命中 <b>' + mr.join('、') + '</b>（每命中一颗 −1 体力）；你命中 <b>' + pr.join('、') + '</b>（一颗就杀死它）。' + (c.spirit ? ' <span class="mp">灵体</span>' : '') + (c.wand ? ' <span class="good">法杖生效中 +2</span>' : '') + '</div>' +
+    (c.dice.length ? '<div class="row" style="margin-top:6px"><span class="dim">上一回合 ' + c.raw + ' → </span><b>' + c.dice.join(' · ') + '</b></div>' : '') +
+    '<div class="row" style="margin-top:10px">' + B('roll', '🎲 掷骰（第 ' + (c.round + 1) + ' 回合）', { cls: 'pri' }) + B('wand', '🪄 麻痹法杖', { dis: !toolReady(0) || c.wand }) + B('moon', '🌫️ 月光织锦：无视', { dis: !trHas(2) }) + '</div></section>';
+}
+function activateHtml(){
+  const b = S.box, need = needEnergy(b.ai);
+  let h = '<section class="card"><h2>激活 ' + ART_ZH[b.ai] + ' · ' + ART_NAMES[b.ai] + '</h2>' +
+    '<div class="help">第 ' + b.attempt + ' 轮 · 差 4→1 能量，差 5→2 能量，差 0→清空重来，其他→锁（负数还会伤你）。需要 ' + need + ' 点。</div>' + diceHtml() +
+    '<div class="row" style="gap:10px;align-items:flex-start;margin-top:6px">';
+  for (let i = 0; i < 4; i++){
+    h += '<div class="box" style="text-align:center">' + cellHtml(i * 2, b.slots[i * 2], 'pa') + cellHtml(i * 2 + 1, b.slots[i * 2 + 1], 'pa') +
+      '<div class="dim" style="font-size:11px">' + (b.circles[i] == null ? '' : (b.circles[i] === 0 ? '✕' : '+' + b.circles[i])) + '</div></div>';
+  }
+  h += '</div><div class="row" style="margin-top:8px"><span class="dim">能量条</span><b>' + (b.energy + b.circles.filter(v => v).reduce((s, v) => s + v, 0)) + ' / ' + need + '</b>' + B('charm', '🪄 聚焦符 +2', { dis: !toolReady(2) }) + B('abandon', '中止') + '</div></section>';
+  return h;
+}
+function linkHtml(){
+  const b = S.box, L = LINKS[b.li];
+  let h = '<section class="card"><h2>连接 ' + ART_ZH[L.a] + ' ↔ ' + ART_ZH[L.b] + '</h2>' +
+    '<div class="help">结果要尽量小；不想要的骰子可扔进垃圾槽（只有 2 格，全满又无处可放 → 受 1 伤）。三个结果圈之和 = link value。</div>' + diceHtml() +
+    '<div class="row" style="gap:10px;align-items:flex-start;margin-top:6px">';
+  for (let i = 0; i < 3; i++){
+    h += '<div class="box" style="text-align:center">' + cellHtml(i * 2, b.cells[i * 2], 'pl') + cellHtml(i * 2 + 1, b.cells[i * 2 + 1], 'pl') +
+      '<div class="dim" style="font-size:11px">' + (b.circles[i] == null ? '' : b.circles[i]) + '</div></div>';
+  }
+  h += '<div class="box" style="text-align:center"><div class="dim" style="font-size:10px">垃圾槽</div>' + cellHtml(6, b.waste[0], 'pl') + cellHtml(7, b.waste[1], 'pl') + '</div>';
+  h += '</div><div class="row" style="margin-top:8px">' + B('abandon', '中止这条线') + '</div></section>';
+  return h;
+}
+function workshopHtml(){
+  const diff = linkTotal();
+  let h = '<section class="card"><h2>神器工坊</h2>' + artsHtml();
+  h += '<div class="row" style="margin-top:10px">' + ART_NAMES.map((n, i) => (S.found[i] && !S.act[i]) ? B('activate', '激活 ' + ART_ZH[i], { v: i, cls: 'mini pri' }) : '').join('') + '</div></section>';
+  h += '<section class="card"><h2>连接（最终难度 ' + diff + '）</h2><table>' + LINKS.map((L, i) => {
+    const ok = S.found[L.a] && S.found[L.b];
+    return '<tr><td>' + ART_ZH[L.a] + ' ↔ ' + ART_ZH[L.b] + '</td><td class="dim">' + COMP_NAMES[L.c] + '(' + COMP_ZH[L.c] + ') ×1</td>' +
+      '<td>' + (S.links[i] == null ? (ok ? B('link', '连接', { v: i, cls: 'mini', dis: S.comps[L.c] < 1 }) + '<span class="dim"> 缺' + COMP_ZH[L.c] + '</span>' : '<span class="dim">需先找到两件神器</span>') : '<b class="acc">' + S.links[i] + '</b>' + (trHas(4) && !S.recordUsed && S.links[i] > 0 ? ' ' + B('record', '改写为 0', { v: i, cls: 'mini' }) : '')) + '</td></tr>';
+  }).join('') + '</table></section>';
+  h += '<section class="card"><h2>行动</h2><div class="row">' + B('wild', '进入野外', { cls: 'pri' }) +
+    [1, 2, 3].map(n => B('rest', '休 ' + n + ' 天', { v: n, dis: S.hp >= MAX_HP })).join('') +
+    B('final', '🌟 最终启动', { dis: !canFinal(), cls: 'pri' }) + '</div>' +
+    (canFinal() ? '' : '<div class="help dim" style="margin-top:6px">还差：' + (6 - S.act.filter(Boolean).length) + ' 件未激活 / ' + (6 - S.links.filter(v => v != null).length) + ' 条未连接。</div>') + '</section>';
+  return h;
+}
+function wildernessHtml(){
+  let h = '<section class="card"><h2>野外 · 选一个地区搜索</h2>';
+  if (S.loc >= 0){
+    const r = REGIONS[S.loc];
+    h += '<div class="row">' + B('search', '🔍 搜索 ' + r.zh, { cls: 'pri' }) +
+      B('extensive', '花 1 天直接取得神器', { dis: S.trk[S.loc] < 6 || S.found[S.loc] }) +
+      B('seal', '⚖️ 均衡之印平息事件', { dis: !artActive(0) || S.sealUsed || S.sealOff === S.loc }) +
+      [1, 2, 3].map(n => B('rest', '休 ' + n + ' 天', { v: n, dis: S.hp >= MAX_HP })).join('') +
+      B('workshop', '回工坊') + '</div>';
+    if (S.trk[S.loc] === 0) h += '<div class="help dim" style="margin-top:6px">提醒：换地区或回工坊会清空本区搜索进度。</div>';
+  }
+  h += '<div class="help dim" style="margin-top:6px">点击地区即可前往（会清空原区进度）。</div>' + regionCards() + '</section>';
+  return h;
+}
+function finalHtml(){
+  const diff = Math.max(1, linkTotal() - (S.spend || 0));
+  return '<section class="card"><h2>🌟 最终启动</h2>' +
+    '<div class="help">六件神器已就位。基础难度 <b>' + linkTotal() + '</b>。你可以先烧自己的体力：每 1 点难度换 1 点血（可以烧到 0，但那时失败即死）。掷 2d6 之和 ≥ 难度即成功；失败花 1 天 + 1 点血，且必须继续掷。</div>' +
+    '<div class="row" style="margin-top:10px;font-size:18px"><span class="dim">难度</span><b class="acc">' + diff + '</b><span class="dim">体力</span><b class="' + (S.hp <= 0 ? 'bad' : '') + '">' + S.hp + '</b>' +
+    B('spend', '−1 体力（换 −1 难度）', { dis: S.hp <= 0, cls: 'pri' }) + '</div>' +
+    '<div class="row" style="margin-top:8px">' + B('froll', '🎲 启动！', { cls: 'pri' }) + (S.finalRun ? B('unspend', '回到 ' + S.hp0 + ' 体力', { v: 1 }) : B('abortfinal', '再想想')) + '</div></section>';
+}
+function overHtml(){
+  const o = S.over;
+  let h = '<section class="card"><h2>' + (o.win ? '🏆 世界得救' : '☠️ 游戏结束') + '</h2><div style="font-size:15px">' + o.reason + '</div>' +
+    '<div class="score">' + S.score.total + ' 分</div><table>';
+  S.score.parts.forEach(p => { if (p[1]) h += '<tr><td>' + p[0] + '</td><td>' + p[1] + ' × ' + p[2] + '</td><td>' + (p[1] * p[2]) + '</td></tr>'; });
+  h += '</table><div class="row" style="margin-top:10px">' + B('newgame', '↺ 再来一局', { cls: 'pri' }) + B('undo', '⎌ 撤销到这之前') + '</div></section>';
+  return h;
+}
+function centerHtml(){
+  let h = '';
+  if (S.mode === 'over') h += overHtml();
+  if (S.mode === 'search') h += searchHtml();
+  if (S.mode === 'resolve') h += searchHtml() + resolveHtml();
+  if (S.mode === 'combat') h += combatHtml();
+  if (S.mode === 'activate') h += activateHtml();
+  if (S.mode === 'link') h += linkHtml();
+  if (S.mode === 'final') h += finalHtml();
+  if (S.mode === 'idle') h += (S.loc < 0 ? workshopHtml() : wildernessHtml());
+  if (S.mode === 'idle' && S.loc >= 0) h += '<section class="card"><h2>六个地区</h2>' + regionCards() + '</section>';
+  return h + helpCard();
+}
+function helpCard(){
+  return '<details class="card"><summary class="acc">📖 规则速查（点击展开）</summary><div class="help" style="margin-top:8px">' +
+    '<b>搜索</b>：掷 3 次 2d6，把每颗骰子填进 2×3 的格子，凑两个三位数相减，目标是让差落在「小的正数」上：0 最赚（神器直接已激活），负数一律算遭遇。<br>' +
+    '<b>0</b>=已激活神器 · <b>1~10</b>=未激活神器 · <b>11~99</b>=材料 · <b>≥100 或 ≤−1</b>=战斗（越偏怪越强，最多 L5）。<br>' +
+    '每次搜索后在本区追踪器打勾，勾到 −1 就花一天（坏天气两天）；换地区/回工坊 = 本区进度清零。<br>' +
+    '<b>战斗</b>：不断掷 2d6；落在它射程的每颗骰子伤你 1 点，落在你射程的一颗就杀死它（同回合双中 → 它先打）。6 点伤昏迷 6 天并丢失所有进度，超过 6 点死。<br>' +
+    '<b>激活</b>：4 个格子，差 4→1 能量、差 5→2、差 0→清空、其他→锁（负数额外受 1 伤）；凑不够 4 点就花一天再来，第二次仍不够再花一天保底。<br>' +
+    '<b>连接</b>：花 1 个材料，3 个格子结果尽量小，可扔 2 颗进垃圾槽；负数 = 受 1 伤 + 再吞 1 个材料（每个负数按 2 计），没材料则这条线作废。六条 link value 之和 = 最终启动难度。<br>' +
+    '<b>最终启动</b>：可烧体力换难度，掷 2d6 ≥ 难度即赢。<br>' +
+    '<b>神之手</b>：3 点溢出能量可划掉一个骷髅，末日推迟 1 天（最多 7 次）。<br>' +
+    '完整说明见 <code>utopia/README.md</code>。</div></details>';
+}
+function topHtml(){
+  return '<input id="sac" type="number" min="0" max="12" value="' + (S ? S.sacrifice : 0) + '" style="width:52px;background:var(--bg3);border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:4px" title="专家模式：开局少给几天，每天 10 分">' +
+    B('newgame', '↺ 新游戏') + B('undo', '⎌ 撤销') + B('save', '💾 存档') + B('load', '📂 读档') +
+    '<span class="sub">' + (S ? '搜索 ' + S.stats.searches + ' 次 · 战斗 ' + S.stats.fights + ' 场 · 击杀 ' + S.stats.kills : '') + '</span>';
+}
+function render(){
+  if (!HAS_DOM) return;
+  document.getElementById('topbtns').innerHTML = topHtml();
+  document.getElementById('left').innerHTML = leftHtml();
+  document.getElementById('center').innerHTML = centerHtml();
+  const lb = document.getElementById('logbox');
+  lb.innerHTML = S.log.map(l => '<p class="' + l.c + '">' + l.m + '</p>').join('');
+  lb.scrollTop = lb.scrollHeight;
+  try { localStorage.setItem('ue-auto', JSON.stringify(S)); } catch (e) {}
+}
+function act(a, v, s){
+  if (a === 'region') return travelTo(v);
+  if (a === 'workshop') return travelTo(-1);
+  if (a === 'wild') return travelTo(S.loc >= 0 ? S.loc : 0);
+  if (a === 'search') return beginSearch();
+  if (a === 'die') return pickDie(v);
+  if (a === 'hint') return UE.toggleHint();
+  if (a === 'auto') return UE.autoSearch();
+  if (a === 'ps') return placeSearch(v);
+  if (a === 'pa') return placeActivate(v);
+  if (a === 'pl') return placeLink(v);
+  if (a === 'mod') return toggleMod(s);
+  if (a === 'rod') return useRod();
+  if (a === 'resolve') return resolveSearch();
+  if (a === 'extensive') return extensiveSearch();
+  if (a === 'seal') return toggleSeal();
+  if (a === 'roll') return combatRoll();
+  if (a === 'wand') return useWand();
+  if (a === 'moon') return ignoreEncounter();
+  if (a === 'rest') return rest(v);
+  if (a === 'activate') return beginActivate(v);
+  if (a === 'charm') return useCharm();
+  if (a === 'abandon') return abandon();
+  if (a === 'link') return beginLink(v);
+  if (a === 'record') return useRecord(v);
+  if (a === 'gh') return godsHand();
+  if (a === 'recharge') return recharge(v);
+  if (a === 'final') return beginFinal();
+  if (a === 'froll') return finalRoll();
+  if (a === 'spend') return spendHp(1);
+  if (a === 'unspend'){ S.finalRun = false; S.spend = 0; S.hp = S.hp0; S.mode = 'final'; return render(); }
+  if (a === 'abortfinal'){ S.mode = 'idle'; S.finalRun = false; S.spend = 0; S.hp = S.hp0; return render(); }
+  if (a === 'newgame'){ const n = parseInt((document.getElementById('sac') || {}).value || '0', 10); return newGame({ sacrifice: isNaN(n) ? 0 : n }); }
+  if (a === 'undo') return undo();
+  if (a === 'save'){ try { localStorage.setItem('ue-save', JSON.stringify(S)); log('已存档到浏览器 localStorage。', 'win'); render(); } catch (e) {} return; }
+  if (a === 'load'){ const t = localStorage.getItem('ue-save'); if (!t){ alert('还没有存档。'); return; } S = JSON.parse(t); UNDO = []; log('读档成功。', 'win'); render(); return; }
+}
+if (HAS_DOM){
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-a]');
+    if (!el) return;
+    act(el.dataset.a, el.dataset.v != null ? +el.dataset.v : null, el.dataset.s);
+  });
+  const auto = localStorage.getItem('ue-auto');
+  if (auto){ try { S = JSON.parse(auto); } catch (e) { S = null; } }
+  if (!S || S.mode === undefined) newGame({}); else render();
+}
+</script>
+</body>
+</html>
