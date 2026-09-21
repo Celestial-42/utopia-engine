@@ -891,10 +891,12 @@ function helpCard(){
     '<b>神之手</b>：3 点溢出能量可划掉一个骷髅，末日推迟 1 天（最多 7 次）。<br>' +
     '完整说明见 <code>utopia/README.md</code>。</div></details>';
 }
+var SAC_INPUT = '0';
 function topHtml(){
-  return '<input id="sac" type="number" min="0" max="12" value="' + (S ? S.sacrifice : 0) + '" style="width:52px;background:var(--bg3);border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:4px" title="专家模式：开局少给几天，每天 10 分">' +
+  return '<span class="dim" title="专家模式：开局先少给几天，每少 1 天结尾 +10 分（只有赢才算）。改完点右边的『新游戏』才生效。">专家模式 −天</span>' +
+    '<input id="sac" type="number" min="0" max="12" value="' + SAC_INPUT + '" oninput="SAC_INPUT=this.value" style="width:48px;background:var(--bg3);border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:4px" title="开局少给几天（0 = 正常 14 天）">' +
     B('newgame', '↺ 新游戏') + B('undo', '⎌ 撤销') + B('save', '💾 存档') + B('load', '📂 读档') +
-    '<span class="sub">' + (S ? '搜索 ' + S.stats.searches + ' 次 · 战斗 ' + S.stats.fights + ' 场 · 击杀 ' + S.stats.kills : '') + '</span>';
+    '<span class="sub">' + (S ? '搜索 ' + S.stats.searches + ' 次 · 战斗 ' + S.stats.fights + ' 场 · 击杀 ' + S.stats.kills + ' · 起始天数 ' + (15 - S.sacrifice) : '') + '</span>';
 }
 function render(){
   if (!HAS_DOM) return;
@@ -938,7 +940,7 @@ function act(a, v, s){
   if (a === 'spend') return spendHp(1);
   if (a === 'unspend'){ S.finalRun = false; S.spend = 0; S.hp = S.hp0; S.mode = 'final'; return render(); }
   if (a === 'abortfinal'){ S.mode = 'idle'; S.finalRun = false; S.spend = 0; S.hp = S.hp0; return render(); }
-  if (a === 'newgame'){ const n = parseInt((document.getElementById('sac') || {}).value || '0', 10); return newGame({ sacrifice: isNaN(n) ? 0 : n }); }
+  if (a === 'newgame'){ const box = document.getElementById('sac'); if (box) SAC_INPUT = box.value; const n = parseInt(SAC_INPUT || '0', 10); return newGame({ sacrifice: isNaN(n) ? 0 : n }); }
   if (a === 'undo') return undo();
   if (a === 'save'){ try { localStorage.setItem('ue-save', JSON.stringify(S)); log('已存档到浏览器 localStorage。', 'win'); render(); } catch (e) {} return; }
   if (a === 'load'){ const t = localStorage.getItem('ue-save'); if (!t){ alert('还没有存档。'); return; } S = JSON.parse(t); UNDO = []; log('读档成功。', 'win'); render(); return; }
