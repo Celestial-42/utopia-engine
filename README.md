@@ -6,6 +6,12 @@
 > 原作与规则归作者所有，玩法数据取自作者公开发布的规则 PDF 与官方网页版，仅用于自己在终端/浏览器里玩。
 > 支持原作：官方免费在线网页版 https://introscopia.github.io/en/Game_Development/Utopia_Engine/ · itch.io https://introscopia.itch.io/utopia-engine
 
+## 在线试玩
+**https://celestial-42.github.io/utopia-engine/**
+不想联网的话，下载 [`utopia-engine.html`](utopia-engine.html) 直接用浏览器打开即可（单文件、零依赖、断网可玩）。
+
+改完想重新发布站点：`./deploy-pages.sh`（把 main 里的 HTML 同步到 Pages 的 `gh-pages` 分支）。
+
 # Utopia Engine 速查（3rd Edition · Nick Hayes · 免费）
 
 单人骰子游戏，口号是 "A solitaire dice game of reconstructing the end of time"。
